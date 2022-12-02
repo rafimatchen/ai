@@ -1,0 +1,122 @@
+<html>
+  <head>
+    <title>Stock Option Calculator</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  </head>
+  <body>
+    <div id="app" class="container">
+      <h1 class="text-center mt-3 mb-3">Stock Option Calculator</h1>
+
+      <form>
+        <div class="form-group">
+          <label for="stockPrice">Stock Price:</label>
+          <input type="number" class="form-control" v-model="stockPrice">
+        </div>
+        <div class="form-group">
+          <label for="strikePrice">Strike Price:</label>
+          <input type="number" class="form-control" v-model="strikePrice">
+        </div>
+        <div class="form-group">
+          <label for="timeToExpiration">Time to Expiration (years):</label>
+          <input type="number" class="form-control" v-model="timeToExpiration">
+        </div>
+        <div class="form-group">
+          <label for="riskFreeRate">Risk-free Interest Rate:</label>
+          <input type="number" class="form-control" v-model="riskFreeRate">
+        </div>
+        <div class="form-group">
+          <label for="volatility">Volatility:</label>
+          <input type="number" class="form-control" v-model="volatility">
+        </div>
+        <input type="button" class="btn btn-primary" value="Calculate" @click="calculate">
+      </form>
+
+      <table class="table mt-3">
+        <thead>
+          <tr>
+            <th scope="col">Option Value</th>
+            <th scope="col">Delta</th>
+            <th scope="col">Gamma</th>
+            <th scope="col">Theta</th>
+            <th scope="col">Vega</th>
+            <th scope="col">Rho</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{ optionValue }}</td>
+            <td>{{ delta }}</td>
+            <td>{{ gamma }}</td>
+            <td>{{ theta }}</td>
+            <td>{{ vega }}</td>
+            <td>{{ rho }}</td>
+          </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+  var app = new Vue({
+    el: '#app',
+    data: {
+      stockPrice: 0,
+      strikePrice: 0,
+      timeToExpiration: 0,
+      riskFreeRate: 0,
+      volatility: 0,
+      optionValue: 0,
+      delta: 0,
+      gamma: 0,
+      theta: 0,
+      vega: 0,
+      rho: 0
+    },
+    methods: {
+      calculate: function() {
+        // Calculate option value
+        var d1 = (Math.log(this.stockPrice / this.strikePrice) + (this.riskFreeRate + Math.pow(this.volatility, 2) / 2) * this.timeToExpiration) / (this.volatility * Math.sqrt(this.timeToExpiration));
+        var d2 = d1 - this.volatility * Math.sqrt(this.timeToExpiration);
+        var callValue = this.stockPrice * NORMSDIST(d1) - this.strikePrice * Math.exp(-this.riskFreeRate * this.timeToExpiration) * NORMSDIST(d2);
+        var putValue = this.strikePrice * Math.exp(-this.riskFreeRate * this.timeToExpiration) * NORMSDIST(-d2) - this.stockPrice * NORMSDIST(-d1);
+
+        // Calculate greeks
+        var delta = NORMSDIST(d1);
+        var gamma = NORMSDIST(d1) / (this.stockPrice * this.volatility * Math.sqrt(this.timeToExpiration));
+        var theta = -(this.stockPrice * NORMSDIST(d1) * this.volatility) / (2 * Math.sqrt(this.timeToExpiration)) - this.riskFreeRate * this.strikePrice * Math.exp(-this.riskFreeRate * this.timeToExpiration) * NORMSDIST(d2);
+        var vega = this.stockPrice * Math.sqrt(this.timeToExpiration) * NORMSDIST(d1);
+        var rho = this.strikePrice * this.timeToExpiration * Math.exp(-this.riskFreeRate * this.timeToExpiration) * NORMSDIST(d2);
+
+        // Update values
+        this.optionValue = callValue;
+        this.delta = delta;
+        this.gamma = gamma;
+          this.theta = theta;
+          this.vega = vega;
+          this.rho = rho;
+        }
+      }
+    });
+
+    // Function to calculate the cumulative normal distribution
+    function NORMSDIST(x) {
+      var b1 = 0.31938153;
+      var b2 = -0.356563782;
+      var b3 = 1.781477937;
+      var b4 = -1.821255978;
+      var b5 = 1.330274429;
+      var p = 0.2316419;
+      var c2 = 0.3989423;
+      var a = Math.abs(x);
+      var t = 1 / (1 + a * p);
+      var b = c2 * Math.exp(-x * x / 2);
+      var n = ((((b5 * t + b4) * t + b3) * t + b2) * t + b1) * t;
+      n = 1 - b * n;
+      if (x < 0) {
+        n = 1 - n;
+      }
+      return n;
+    }
+  </script>
+</body>
+</html>
